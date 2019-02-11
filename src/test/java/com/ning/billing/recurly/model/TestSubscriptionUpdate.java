@@ -52,7 +52,7 @@ public class TestSubscriptionUpdate extends TestModelBase {
         subscription.setQuantity(1);
 
         final String xml = xmlMapper.writeValueAsString(subscription);
-        Assert.assertEquals(xml, "<subscription xmlns=\"\">" +
+        Assert.assertEquals(xml, "<subscription>" +
                                  "<timeframe>now</timeframe>" +
                                  "<unit_amount_in_cents>800</unit_amount_in_cents>" +
                                  "<quantity>1</quantity>" +
@@ -70,11 +70,11 @@ public class TestSubscriptionUpdate extends TestModelBase {
         subscription.setAddOns(new SubscriptionAddOns());
 
         final String xml = xmlMapper.writeValueAsString(subscription);
-        Assert.assertEquals(xml, "<subscription xmlns=\"\">" +
+        Assert.assertEquals(xml, "<subscription>" +
                                  "<timeframe>now</timeframe>" +
                                  "<unit_amount_in_cents>800</unit_amount_in_cents>" +
                                  "<quantity>1</quantity>" +
-                                 "<subscription_add_ons></subscription_add_ons>" +
+                                 "<subscription_add_ons/>" +
                                  "<plan_code>gold</plan_code>" +
                                  "</subscription>");
     }
@@ -95,7 +95,7 @@ public class TestSubscriptionUpdate extends TestModelBase {
         subscription.setAddOns(addOns);
 
         final String xml = xmlMapper.writeValueAsString(subscription);
-        Assert.assertEquals(xml, "<subscription xmlns=\"\">" +
+        Assert.assertEquals(xml, "<subscription>" +
                                  "<timeframe>now</timeframe>" +
                                  "<unit_amount_in_cents>800</unit_amount_in_cents>" +
                                  "<quantity>1</quantity>" +
@@ -107,6 +107,55 @@ public class TestSubscriptionUpdate extends TestModelBase {
                                  "</subscription_add_on>" +
                                  "</subscription_add_ons>" +
                                  "<plan_code>gold</plan_code>" +
+                                 "</subscription>");
+    }
+
+
+    @Test(groups = "fast")
+    public void testSerializationWithCustomFields() throws Exception {
+        final SubscriptionUpdate subscription = new SubscriptionUpdate();
+        subscription.setPlanCode("gold");
+        subscription.setTimeframe(SubscriptionUpdate.Timeframe.now);
+        subscription.setUnitAmountInCents(800);
+        subscription.setQuantity(1);
+        final CustomFields fields = new CustomFields();
+        final CustomField customField= new CustomField();
+        customField.setName("name1");
+        customField.setValue("value1");
+        fields.add(customField);
+        subscription.setCustomFields(fields);
+
+        final String xml = xmlMapper.writeValueAsString(subscription);
+        Assert.assertEquals(xml, "<subscription>" +
+                "<timeframe>now</timeframe>" +
+                "<unit_amount_in_cents>800</unit_amount_in_cents>" +
+                "<quantity>1</quantity>" +
+                "<custom_fields>" +
+                "<custom_field>" +
+                "<name>name1</name>" +
+                "<value>value1</value>" +
+                "</custom_field>" +
+                "</custom_fields>" +
+                "<plan_code>gold</plan_code>" +
+                "</subscription>");
+    }
+
+    @Test(groups = "fast")
+    public void testSerializationWithCoupons() throws Exception {
+        final SubscriptionUpdate subscription = new SubscriptionUpdate();
+        subscription.setPlanCode("gold");
+        subscription.setTimeframe(SubscriptionUpdate.Timeframe.now);
+        subscription.setUnitAmountInCents(800);
+        subscription.setQuantity(1);
+        subscription.setCouponCode("my_coupon");
+
+        final String xml = xmlMapper.writeValueAsString(subscription);
+        Assert.assertEquals(xml, "<subscription>" +
+                                 "<timeframe>now</timeframe>" +
+                                 "<unit_amount_in_cents>800</unit_amount_in_cents>" +
+                                 "<quantity>1</quantity>" +
+                                 "<plan_code>gold</plan_code>" +
+                                 "<coupon_code>my_coupon</coupon_code>" +
                                  "</subscription>");
     }
 }
