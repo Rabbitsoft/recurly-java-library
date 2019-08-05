@@ -39,6 +39,9 @@ public class Account extends RecurlyObject {
     @XmlElement(name = "address")
     private Address address;
 
+    @XmlElement(name = "parent_account_code")
+    private String parentAccountCode;
+
     @XmlElementWrapper(name = "adjustments")
     @XmlElement(name = "adjustment")
     private Adjustments adjustments;
@@ -96,6 +99,9 @@ public class Account extends RecurlyObject {
 
     @XmlElement(name = "updated_at")
     private DateTime updatedAt;
+
+    @XmlElement(name = "closed_at")
+    private DateTime closedAt;
 
     @XmlElement(name = "billing_info")
     private BillingInfo billingInfo;
@@ -203,6 +209,14 @@ public class Account extends RecurlyObject {
         this.accountCode = stringOrNull(accountCode);
     }
 
+    public String getParentAccountCode() {
+        return this.parentAccountCode;
+    }
+
+    public void setParentAccountCode(final Object parentAccountCode) {
+        this.parentAccountCode = stringOrNull(parentAccountCode);
+    }
+
     public String getState() {
         return state;
     }
@@ -293,6 +307,14 @@ public class Account extends RecurlyObject {
 
     public void setUpdatedAt(final Object updatedAt) {
         this.updatedAt = dateTimeOrNull(updatedAt);
+    }
+
+    public DateTime getClosedAt() {
+        return closedAt;
+    }
+
+    public void setClosedAt(final Object closedAt) {
+        this.closedAt = dateTimeOrNull(closedAt);
     }
 
     public BillingInfo getBillingInfo() {
@@ -417,6 +439,7 @@ public class Account extends RecurlyObject {
         sb.append(", subscriptions=").append(subscriptions);
         sb.append(", transactions=").append(transactions);
         sb.append(", accountCode='").append(accountCode).append('\'');
+        sb.append(", parentAccountCode='").append(parentAccountCode).append('\'');
         sb.append(", state='").append(state).append('\'');
         sb.append(", username='").append(username).append('\'');
         sb.append(", email='").append(email).append('\'');
@@ -428,6 +451,7 @@ public class Account extends RecurlyObject {
         sb.append(", hostedLoginToken='").append(hostedLoginToken).append('\'');
         sb.append(", createdAt=").append(createdAt);
         sb.append(", updatedAt=").append(updatedAt);
+        sb.append(", closedAt=").append(closedAt);
         sb.append(", billingInfo=").append(billingInfo);
         sb.append(", taxExempt=").append(taxExempt);
         sb.append(", exemptionCertificate='").append(exemptionCertificate).append('\'');
@@ -462,6 +486,9 @@ public class Account extends RecurlyObject {
         if (accountCode != null ? !accountCode.equals(account.accountCode) : account.accountCode != null) {
             return false;
         }
+        if (parentAccountCode != null ? !parentAccountCode.equals(account.parentAccountCode) : account.parentAccountCode != null) {
+            return false;
+        }
         if (address != null ? !address.equals(account.address) : account.address != null) {
             return false;
         }
@@ -469,6 +496,9 @@ public class Account extends RecurlyObject {
             return false;
         }
         if (billingInfo != null ? !billingInfo.equals(account.billingInfo) : account.billingInfo != null) {
+            return false;
+        }
+        if (closedAt != null ? closedAt.compareTo(account.closedAt) != 0 : account.closedAt != null) {
             return false;
         }
         if (this.getCompanyName() != null ? !this.getCompanyName().equals(account.getCompanyName()) : account.getCompanyName() != null) {
@@ -554,6 +584,7 @@ public class Account extends RecurlyObject {
     public int hashCode() {
         return Objects.hashCode(
                 address,
+                parentAccountCode,
                 href,
                 adjustments,
                 invoices,
@@ -584,7 +615,8 @@ public class Account extends RecurlyObject {
                 customFields,
                 vatNumber,
                 accountAcquisition,
-                preferredLocale
+                preferredLocale,
+                closedAt
         );
     }
 }

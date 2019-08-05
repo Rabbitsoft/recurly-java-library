@@ -17,14 +17,15 @@
 
 package com.ning.billing.recurly.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.base.Objects;
 import org.joda.time.DateTime;
 
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlElementWrapper;
-import javax.xml.bind.annotation.XmlList;
 import javax.xml.bind.annotation.XmlRootElement;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 
 @XmlRootElement(name = "subscription")
@@ -99,11 +100,11 @@ public class Subscription extends AbstractSubscription {
     @XmlElement(name = "net_terms")
     private Integer netTerms;
 
-    @XmlElement(name = "coupon_code")
+    @JsonIgnore
     private String couponCode;
 
-    @XmlList
     @XmlElementWrapper(name = "coupon_codes")
+    @XmlElement(name = "coupon_code")
     private List<String> couponCodes;
 
     //Purchase Order Number
@@ -139,6 +140,12 @@ public class Subscription extends AbstractSubscription {
 
     @XmlElement(name = "shipping_address_id")
     private Long shippingAddressId;
+
+    @XmlElement(name = "shipping_method_code")
+    private String shippingMethodCode;
+
+    @XmlElement(name = "shipping_amount_in_cents")
+    private Integer shippingAmountInCents;
 
     @XmlElement(name = "no_billing_info_reason")
     private String noBillingInfoReason;
@@ -392,6 +399,8 @@ public class Subscription extends AbstractSubscription {
 
     public void setCouponCode(final String couponCode) {
         this.couponCode = couponCode;
+        if (this.couponCodes == null) this.couponCodes = new ArrayList<String>();
+        this.couponCodes.add(couponCode);
     }
 
     public void setCouponCodes(final List<String> couponCodes) {
@@ -432,6 +441,22 @@ public class Subscription extends AbstractSubscription {
 
     public void setShippingAddressId(final Object shippingAddressId) {
         this.shippingAddressId = longOrNull(shippingAddressId);
+    }
+
+    public String getShippingMethodCode() {
+        return shippingMethodCode;
+    }
+
+    public void setShippingMethodCode(final Object shippingMethodCode) {
+        this.shippingMethodCode = stringOrNull(shippingMethodCode);
+    }
+
+    public Integer getShippingAmountInCents() {
+        return shippingAmountInCents;
+    }
+
+    public void setShippingAmountInCents(final Object shippingAmountInCents) {
+        this.shippingAmountInCents = integerOrNull(shippingAmountInCents);
     }
 
     public DateTime getUpdatedAt() {
@@ -590,6 +615,8 @@ public class Subscription extends AbstractSubscription {
         sb.append(", taxRate=").append(taxRate);
         sb.append(", shippingAddress=").append(shippingAddress);
         sb.append(", shippingAddressId=").append(shippingAddressId);
+        sb.append(", shippingMethodCode=").append(shippingMethodCode);
+        sb.append(", shippingAmountInCents=").append(shippingAmountInCents);
         sb.append(", startedWithGift=").append(startedWithGift);
         sb.append(", convertedAt=").append(convertedAt);
         sb.append(", noBillingInfoReason=").append(noBillingInfoReason);
@@ -727,6 +754,12 @@ public class Subscription extends AbstractSubscription {
         if (shippingAddressId != null ? !shippingAddressId.equals(that.shippingAddressId) : that.shippingAddressId != null) {
             return false;
         }
+        if (shippingMethodCode != null ? !shippingMethodCode.equals(that.shippingMethodCode) : that.shippingMethodCode != null) {
+            return false;
+        }
+        if (shippingAmountInCents != null ? !shippingAmountInCents.equals(that.shippingAmountInCents) : that.shippingAmountInCents != null) {
+            return false;
+        }
         if (noBillingInfoReason != null ? !noBillingInfoReason.equals(that.noBillingInfoReason) : that.noBillingInfoReason != null) {
             return false;
         }
@@ -740,6 +773,9 @@ public class Subscription extends AbstractSubscription {
             return false;
         }
         if (renewalBillingCycles != null ? !renewalBillingCycles.equals(that.renewalBillingCycles) : that.renewalBillingCycles != null) {
+            return false;
+        }
+        if (autoRenew != null ? !autoRenew.equals(that.autoRenew) : that.autoRenew != null) {
             return false;
         }
         if (firstBillDate != null ? firstBillDate.compareTo(that.firstBillDate) != 0 : that.firstBillDate != null) {
@@ -792,6 +828,8 @@ public class Subscription extends AbstractSubscription {
                 taxRate,
                 shippingAddress,
                 shippingAddressId,
+                shippingMethodCode,
+                shippingAmountInCents,
                 couponCode,
                 couponCodes,
                 convertedAt,

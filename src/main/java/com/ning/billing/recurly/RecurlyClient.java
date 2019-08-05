@@ -65,6 +65,8 @@ import com.ning.billing.recurly.model.Usages;
 import com.ning.billing.recurly.model.MeasuredUnit;
 import com.ning.billing.recurly.model.MeasuredUnits;
 import com.ning.billing.recurly.model.AccountAcquisition;
+import com.ning.billing.recurly.model.ShippingMethod;
+import com.ning.billing.recurly.model.ShippingMethods;
 
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.google.common.annotations.VisibleForTesting;
@@ -90,6 +92,7 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.math.BigDecimal;
 import java.net.ConnectException;
+import java.net.URI;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.security.KeyManagementException;
@@ -101,13 +104,14 @@ import java.util.concurrent.ExecutionException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.List;
+import java.util.Arrays;
 
 public class RecurlyClient {
 
     private static final Logger log = LoggerFactory.getLogger(RecurlyClient.class);
 
     public static final String RECURLY_DEBUG_KEY = "recurly.debug";
-    public static final String RECURLY_API_VERSION = "2.17";
+    public static final String RECURLY_API_VERSION = "2.21";
 
     private static final String X_RATELIMIT_REMAINING_HEADER_NAME = "X-RateLimit-Remaining";
     private static final String X_RECORDS_HEADER_NAME = "X-Records";
@@ -119,6 +123,8 @@ public class RecurlyClient {
     private static final Pattern TAG_FROM_GIT_DESCRIBE_PATTERN = Pattern.compile("recurly-java-library-([0-9]*\\.[0-9]*\\.[0-9]*)(-[0-9]*)?");
 
     public static final String FETCH_RESOURCE = "/recurly_js/result";
+
+    private static final List<String> validHosts = Arrays.asList("recurly.com");
 
     /**
      * Checks a system property to see if debugging output is
@@ -303,6 +309,9 @@ public class RecurlyClient {
      * @return account object on success, null otherwise
      */
     public Account getAccount(final String accountCode) {
+        if (accountCode == null || accountCode.isEmpty())
+            throw new RuntimeException("accountCode cannot be empty!");
+
         return doGET(Account.ACCOUNT_RESOURCE + "/" + accountCode, Account.class);
     }
 
@@ -341,6 +350,31 @@ public class RecurlyClient {
      */
     public void closeAccount(final String accountCode) {
         doDELETE(Account.ACCOUNT_RESOURCE + "/" + accountCode);
+    }
+
+    /**
+     * Reopen Account
+     * <p>
+     * Transitions a closed account back to active.
+     *
+     * @param accountCode recurly account id
+     */
+    public Account reopenAccount(final String accountCode) {
+        return doPUT(Account.ACCOUNT_RESOURCE + "/" + accountCode + "/reopen",
+                     null, Account.class);
+    }
+
+
+    /**
+     * Get Child Accounts
+     * <p>
+     * Returns information about a the child accounts of an account.
+     *
+     * @param accountCode recurly account id
+     * @return Accounts on success, null otherwise
+     */
+    public Accounts getChildAccounts(final String accountCode) {
+        return doGET(Account.ACCOUNT_RESOURCE + "/" + accountCode + "/child_accounts", Accounts.class, new QueryParams());
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////
@@ -402,6 +436,9 @@ public class RecurlyClient {
     }
 
     public Adjustment getAdjustment(final String adjustmentUuid) {
+        if (adjustmentUuid == null || adjustmentUuid.isEmpty())
+            throw new RuntimeException("adjustmentUuid cannot be empty!");
+
         return doGET(Adjustments.ADJUSTMENTS_RESOURCE + "/" + adjustmentUuid, Adjustment.class);
     }
 
@@ -457,6 +494,9 @@ public class RecurlyClient {
      * @return Subscription
      */
     public Subscription getSubscription(final String uuid) {
+        if (uuid == null || uuid.isEmpty())
+            throw new RuntimeException("uuid cannot be empty!");
+
         return doGET(Subscriptions.SUBSCRIPTIONS_RESOURCE
                      + "/" + uuid,
                      Subscription.class);
@@ -747,9 +787,34 @@ public class RecurlyClient {
      * Please note: this API end-point may be used to import billing information without security codes (CVV).
      * Recurly recommends requiring CVV from your customers when collecting new or updated billing information.
      *
+     * @param accountCode recurly account id
      * @param billingInfo billing info object to create or update
      * @return the newly created or update billing info object on success, null otherwise
      */
+    public BillingInfo createOrUpdateBillingInfo(final String accountCode, final BillingInfo billingInfo) {
+        return doPUT(Account.ACCOUNT_RESOURCE + "/" + accountCode + BillingInfo.BILLING_INFO_RESOURCE,
+                     billingInfo, BillingInfo.class);
+    }
+
+    /**
+     * Update an account's billing info
+     * <p>
+     * When new or updated credit card information is updated, the billing information is only saved if the credit card
+     * is valid. If the account has a past due invoice, the outstanding balance will be collected to validate the
+     * billing information.
+     * <p>
+     * If the account does not exist before the API request, the account will be created if the billing information
+     * is valid.
+     * <p>
+     * Please note: this API end-point may be used to import billing information without security codes (CVV).
+     * Recurly recommends requiring CVV from your customers when collecting new or updated billing information.
+     *
+     * @deprecated Replaced by {@link #createOrUpdateBillingInfo(String, BillingInfo)} Please pass in the account code rather than setting the account on the BillingInfo object
+     *
+     * @param billingInfo billing info object to create or update
+     * @return the newly created or update billing info object on success, null otherwise
+     */
+    @Deprecated
     public BillingInfo createOrUpdateBillingInfo(final BillingInfo billingInfo) {
         final String accountCode = billingInfo.getAccount().getAccountCode();
         // Unset it to avoid confusing Recurly
@@ -880,6 +945,9 @@ public class RecurlyClient {
      * @return the transaction if found, null otherwise
      */
     public Transaction getTransaction(final String transactionId) {
+        if (transactionId == null || transactionId.isEmpty())
+            throw new RuntimeException("transactionId cannot be empty!");
+
         return doGET(Transactions.TRANSACTIONS_RESOURCE + "/" + transactionId,
                      Transaction.class);
     }
@@ -939,6 +1007,9 @@ public class RecurlyClient {
      * @return the invoice
      */
     public Invoice getInvoice(final String invoiceId) {
+        if (invoiceId == null || invoiceId.isEmpty())
+            throw new RuntimeException("invoiceId cannot be empty!");
+
         return doGET(Invoices.INVOICES_RESOURCE + "/" + invoiceId, Invoice.class);
     }
 
@@ -978,6 +1049,9 @@ public class RecurlyClient {
      * @return the invoice pdf as an inputStream
      */
     public InputStream getInvoicePdf(final String invoiceId) {
+        if (invoiceId == null || invoiceId.isEmpty())
+            throw new RuntimeException("invoiceId cannot be empty!");
+
         return doGETPdf(Invoices.INVOICES_RESOURCE + "/" + invoiceId);
     }
 
@@ -1316,6 +1390,9 @@ public class RecurlyClient {
      * @return the plan object as identified by the passed in ID
      */
     public Plan getPlan(final String planCode) {
+        if (planCode == null || planCode.isEmpty())
+            throw new RuntimeException("planCode cannot be empty!");
+
         return doGET(Plan.PLANS_RESOURCE + "/" + planCode, Plan.class);
     }
 
@@ -1390,6 +1467,9 @@ public class RecurlyClient {
      * @return the {@link AddOn} object as identified by the passed in plan and add-on IDs
      */
     public AddOn getAddOn(final String planCode, final String addOnCode) {
+        if (addOnCode == null || addOnCode.isEmpty())
+            throw new RuntimeException("addOnCode cannot be empty!");
+
         return doGET(Plan.PLANS_RESOURCE +
                      "/" +
                      planCode +
@@ -1489,6 +1569,9 @@ public class RecurlyClient {
      * @return The {@link Coupon} object as identified by the passed in code
      */
     public Coupon getCoupon(final String couponCode) {
+        if (couponCode == null || couponCode.isEmpty())
+            throw new RuntimeException("couponCode cannot be empty!");
+
         return doGET(Coupon.COUPON_RESOURCE + "/" + couponCode, Coupon.class);
     }
 
@@ -1971,6 +2054,44 @@ public class RecurlyClient {
         return doGET(path, CreditPayments.class, params);
     }
 
+    /**
+     * Get Shipping Methods for the site
+     * <p>
+     * https://dev.recurly.com/docs/list-shipping-methods
+     *
+     * @return ShippingMethods on success, null otherwise
+     */
+    public ShippingMethods getShippingMethods() {
+        return doGET(ShippingMethods.SHIPPING_METHODS_RESOURCE, ShippingMethods.class, new QueryParams());
+    }
+
+    /**
+     * Get Shipping Methods for the site
+     * <p>
+     * https://dev.recurly.com/docs/list-shipping-methods
+     *
+     * @param params {@link QueryParams}
+     * @return ShippingMethods on success, null otherwise
+     */
+    public ShippingMethods getShippingMethods(final QueryParams params) {
+        return doGET(ShippingMethods.SHIPPING_METHODS_RESOURCE, ShippingMethods.class, params);
+    }
+
+    /**
+     * Look up a shipping method
+     * <p>
+     * https://dev.recurly.com/docs/lookup-shipping-method
+     *
+     * @param shippingMethodCode The code for the {@link ShippingMethod}
+     * @return The {@link ShippingMethod} object as identified by the passed in code
+     */
+    public ShippingMethod getShippingMethod(final String shippingMethodCode) {
+        if (shippingMethodCode == null || shippingMethodCode.isEmpty())
+            throw new RuntimeException("shippingMethodCode cannot be empty!");
+
+        return doGET(ShippingMethod.SHIPPING_METHOD_RESOURCE + "/" + shippingMethodCode, ShippingMethod.class);
+    }
+
     private <T> T fetch(final String recurlyToken, final Class<T> clazz) {
         return doGET(FETCH_RESOURCE + "/" + recurlyToken, clazz);
     }
@@ -1997,6 +2118,7 @@ public class RecurlyClient {
         if (debug()) {
             log.info("Msg to Recurly API [GET] :: URL : {}", url);
         }
+        validateHost(url);
         return callRecurlySafeXmlContent(client.prepareGet(url), clazz);
     }
 
@@ -2009,6 +2131,8 @@ public class RecurlyClient {
     }
 
     private InputStream callRecurlySafeGetPdf(String url) {
+        validateHost(url);
+
         final Response response;
         final InputStream pdfInputStream;
         try {
@@ -2051,6 +2175,8 @@ public class RecurlyClient {
             return null;
         }
 
+        validateHost(baseUrl + resource);
+
         return callRecurlySafeXmlContent(client.preparePost(baseUrl + resource).setBody(xmlPayload), clazz);
     }
 
@@ -2072,6 +2198,8 @@ public class RecurlyClient {
             return null;
         }
 
+        validateHost(baseUrl + resource);
+
         return callRecurlySafeXmlContent(client.preparePut(baseUrl + resource).setBody(xmlPayload), clazz);
     }
 
@@ -2084,10 +2212,15 @@ public class RecurlyClient {
         if (debug()) {
             log.info("Msg to Recurly API [HEAD]:: URL : {}", url);
         }
+
+        validateHost(url);
+
         return callRecurlyNoContent(client.prepareHead(url));
     }
 
     private void doDELETE(final String resource) {
+        validateHost(baseUrl + resource);
+
         callRecurlySafeXmlContent(client.prepareDelete(baseUrl + resource), null);
     }
 
@@ -2258,6 +2391,18 @@ public class RecurlyClient {
         builder.setSSLContext(SslUtils.getInstance().getSSLContext());
 
         return new AsyncHttpClient(builder.build());
+    }
+
+    private void validateHost(String url) {
+        String host = URI.create(url).getHost();
+
+        // Remove the subdomain from the host
+        host = host.substring(host.indexOf(".")+1);
+
+        if (!validHosts.contains(host)) {
+            String exc = String.format("Attempted to make call to %s instead of Recurly", host);
+            throw new RuntimeException(exc);
+        }
     }
 
     @VisibleForTesting

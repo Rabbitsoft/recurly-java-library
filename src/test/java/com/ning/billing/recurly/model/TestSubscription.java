@@ -19,6 +19,7 @@ package com.ning.billing.recurly.model;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 
 import com.ning.billing.recurly.TestUtils;
 import org.joda.time.DateTime;
@@ -27,6 +28,7 @@ import org.testng.annotations.Test;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotEquals;
+import static org.testng.Assert.assertTrue;
 
 public class TestSubscription extends TestModelBase {
 
@@ -92,6 +94,11 @@ public class TestSubscription extends TestModelBase {
         verifyPaginationData(subscription);
         verifyPendingSubscription(subscription);
         Assert.assertEquals(subscription.getAddOns().size(), 0);
+
+        ArrayList<String> codes = new ArrayList<String>();
+        codes.add("123");
+        codes.add("abc");
+        assertEquals(subscription.getCouponCodes(), codes);
     }
 
     @Test(groups = "fast")
@@ -139,6 +146,8 @@ public class TestSubscription extends TestModelBase {
                                         "      <add_on_code>extra_users</add_on_code>\n" +
                                         "      <quantity>2</quantity>\n" +
                                         "      <unit_amount_in_cents>1000</unit_amount_in_cents>\n" +
+                                        "      <usage_percentage type=\"float\">2.1</usage_percentage>\n" +
+                                        "      <revenue_schedule_type>evenly</revenue_schedule_type>\n" +
                                         "    </subscription_add_on>\n" +
                                         "    <subscription_add_on>\n" +
                                         "      <add_on_code>extra_ip</add_on_code>\n" +
@@ -220,6 +229,31 @@ public class TestSubscription extends TestModelBase {
     }
 
     @Test(groups = "fast")
+    public void testSerializationWithSingleCoupon() throws Exception {
+        Subscription subscription = TestUtils.createRandomSubscription(0);
+        subscription.setCouponCode("my-coupon");
+        String xmlString = xmlMapper.writeValueAsString(subscription);
+        assertTrue(xmlString.contains("<coupon_codes><coupon_code>my-coupon</coupon_code></coupon_codes>"));
+    }
+
+    @Test(groups = "fast")
+    public void testSerializationWithMultipleCoupon() throws Exception {
+        Subscription subscription = TestUtils.createRandomSubscription(0);
+        ArrayList<String> codes = new ArrayList<String>();
+        codes.add("my-first-coupon");
+        subscription.setCouponCodes(codes);
+        String xmlString = xmlMapper.writeValueAsString(subscription);
+        String xmlSubstring = "<coupon_codes><coupon_code>my-first-coupon</coupon_code></coupon_codes>";
+        assertTrue(xmlString.contains(xmlSubstring));
+
+        codes.add("my-second-coupon");
+        subscription.setCouponCodes(codes);
+        xmlSubstring = "<coupon_codes><coupon_code>my-first-coupon</coupon_code><coupon_code>my-second-coupon</coupon_code></coupon_codes>";
+        xmlString = xmlMapper.writeValueAsString(subscription);
+        assertTrue(xmlString.contains(xmlSubstring));
+    }
+
+    @Test(groups = "fast")
     public void testHashCodeAndEquality() throws Exception {
         // create subscriptions of the same value but difference references
         Subscription subscription = TestUtils.createRandomSubscription(0);
@@ -235,6 +269,8 @@ public class TestSubscription extends TestModelBase {
         Assert.assertEquals(subscription.getAddOns().get(0).getAddOnCode(), "extra_users");
         Assert.assertEquals(subscription.getAddOns().get(0).getQuantity(), (Integer) 2);
         Assert.assertEquals(subscription.getAddOns().get(0).getUnitAmountInCents(), (Integer) 1000);
+        Assert.assertEquals(subscription.getAddOns().get(0).getUsagePercentage(), BigDecimal.valueOf(2.1));
+        Assert.assertEquals(subscription.getAddOns().get(0).getRevenueScheduleType(), RevenueScheduleType.EVENLY);
         Assert.assertEquals(subscription.getAddOns().get(1).getAddOnCode(), "extra_ip");
         Assert.assertEquals(subscription.getAddOns().get(1).getQuantity(), (Integer) 3);
         Assert.assertEquals(subscription.getAddOns().get(1).getUnitAmountInCents(), (Integer) 200);
